@@ -1,9 +1,10 @@
-Original source: https://www.nyc.gov/html/tlc/html/about/trip_record_data.shtml
+Original source: https://www.kaggle.com/shashwatwork/airfares-in-new-zealand?select=NZ+airfares.csv
 
-The dataset is provided under terms provided by City of New York: https://opendata.cityofnewyork.us/overview/#termsofuse.
+Context
+✈️This dataset presents the domestic airfares of New Zealand’s airlines (dominating by Air New Zealand, a full-service carrier; and Jetstar, a low-cost carrier) at 12 trunk routes and 40 secondary routes in New Zealand.✈️
 
-By accessing datasets and feeds available through NYC Open Data, the user agrees to all of the Terms of Use of NYC.gov as well as the Privacy Policy for NYC.gov. The user also agrees to any additional terms of use defined by the agencies, bureaus, and offices providing data. Public data sets made available on NYC Open Data are provided for informational purposes. The City does not warranty the completeness, accuracy, content, or fitness for any particular purpose or use of any public data set made available on NYC Open Data, nor are any such warranties to be implied or inferred with respect to the public data sets furnished therein.
+Content
+✈️The data was extracted from Expedia, one of the biggest online travel meta-search engine, using a ‘web crawler’ (Octoparse.com) that collects hourly airfares of the two airlines from September 19, 2019, to December 18, 2019, a total of 90 days. It therefore provides a rich dataset of more than 162,000 observations regarding the departure time, arrival time, flight duration, airline, airfare, departure airport, arrival airport, transiting airport, and so on… That information can be conveniently used in future studies in the fields of business and economics, transportation and aviation, or management and marketing.✈️
 
-The City is not liable for any deficiencies in the completeness, accuracy, content, or fitness for any particular purpose or use of any public data set, or application utilizing such data set, provided by any third party.
-
-Submitting City Agencies are the authoritative source of data available on NYC Open Data. These entities are responsible for data quality and retain version control of data sets and feeds accessed on the Site. Data may be updated, corrected, or refreshed at any time.
+Acknowledgements
+✈️Ngo, Thanh (2020), “Airfares in New Zealand”, Mendeley Data, V1, doi: 10.17632/w8wk4h9hxc.1✈️
