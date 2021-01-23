@@ -1,0 +1,10 @@
+Original source: https://www.kaggle.com/shashwatwork/airfares-in-new-zealand?select=NZ+airfares.csv
+
+Context
+✈️This dataset presents the domestic airfares of New Zealand’s airlines (dominating by Air New Zealand, a full-service carrier; and Jetstar, a low-cost carrier) at 12 trunk routes and 40 secondary routes in New Zealand.✈️
+
+Content
+✈️The data was extracted from Expedia, one of the biggest online travel meta-search engine, using a ‘web crawler’ (Octoparse.com) that collects hourly airfares of the two airlines from September 19, 2019, to December 18, 2019, a total of 90 days. It therefore provides a rich dataset of more than 162,000 observations regarding the departure time, arrival time, flight duration, airline, airfare, departure airport, arrival airport, transiting airport, and so on… That information can be conveniently used in future studies in the fields of business and economics, transportation and aviation, or management and marketing.✈️
+
+Acknowledgements
+✈️Ngo, Thanh (2020), “Airfares in New Zealand”, Mendeley Data, V1, doi: 10.17632/w8wk4h9hxc.1✈️
