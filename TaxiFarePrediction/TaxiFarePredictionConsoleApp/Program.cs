@@ -4,35 +4,34 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-
 using Common;
-
 using Microsoft.ML;
 using Microsoft.ML.Data;
-
 using PLplot;
-
 using Regression_TaxiFarePrediction.DataStructures;
-
 using static Microsoft.ML.Transforms.NormalizingEstimator;
 
 namespace Regression_TaxiFarePrediction
 {
     internal static class Program
     {
+        #region paths
+
         private static string AppPath => Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
 
         private static string BaseDatasetsRelativePath = @"../../../../Data";
-        private static string TrainDataRelativePath = $"{BaseDatasetsRelativePath}/taxi-fare-train.csv";
-        private static string TestDataRelativePath = $"{BaseDatasetsRelativePath}/taxi-fare-test.csv";
+        private static string TrainDataRelativePath = $"{BaseDatasetsRelativePath}/nz-airfares-train.csv";
+        private static string TestDataRelativePath = $"{BaseDatasetsRelativePath}/nz-airfares-test.csv";
 
         private static string TrainDataPath = GetAbsolutePath(TrainDataRelativePath);
         private static string TestDataPath = GetAbsolutePath(TestDataRelativePath);
 
         private static string BaseModelsRelativePath = @"../../../../MLModels";
-        private static string ModelRelativePath = $"{BaseModelsRelativePath}/TaxiFareModel.zip";
+        private static string ModelRelativePath = $"{BaseModelsRelativePath}/AirTravelFareModel.zip";
 
         private static string ModelPath = GetAbsolutePath(ModelRelativePath);
+
+        #endregion
 
         static void Main(string[] args) //If args[0] == "svg" a vector-based chart will be created instead a .png chart
         {
@@ -46,7 +45,8 @@ namespace Regression_TaxiFarePrediction
             TestSinglePrediction(mlContext);
 
             // Paint regression distribution chart for a number of elements read from a Test DataSet file
-            PlotRegressionChart(mlContext, TestDataPath, 100, args);
+            // PlotRegressionChart(mlContext, TestDataPath, 100, args);
+            // TODO: Fix the error related to the exception
 
             Console.WriteLine("Press any key to exit..");
             Console.ReadLine();
@@ -55,29 +55,54 @@ namespace Regression_TaxiFarePrediction
         private static ITransformer BuildTrainEvaluateAndSaveModel(MLContext mlContext)
         {
             // STEP 1: Common data loading configuration
-            IDataView baseTrainingDataView = mlContext.Data.LoadFromTextFile<TaxiTrip>(TrainDataPath, hasHeader: true, separatorChar: ',');
-            IDataView testDataView = mlContext.Data.LoadFromTextFile<TaxiTrip>(TestDataPath, hasHeader: true, separatorChar: ',');
+            IDataView baseTrainingDataView =
+                mlContext.Data.LoadFromTextFile<AirTravel>(TrainDataPath, hasHeader: true, separatorChar: ',');
+            IDataView testDataView =
+                mlContext.Data.LoadFromTextFile<AirTravel>(TestDataPath, hasHeader: true, separatorChar: ',');
 
             //Sample code of removing extreme data like "outliers" for FareAmounts higher than $150 and lower than $1 which can be error-data 
-            var cnt = baseTrainingDataView.GetColumn<float>(nameof(TaxiTrip.FareAmount)).Count();
-            IDataView trainingDataView = mlContext.Data.FilterRowsByColumn(baseTrainingDataView, nameof(TaxiTrip.FareAmount), lowerBound: 1, upperBound: 150);
-            var cnt2 = trainingDataView.GetColumn<float>(nameof(TaxiTrip.FareAmount)).Count();
+            var cnt = baseTrainingDataView.GetColumn<float>(nameof(AirTravel.AirFare)).Count();
+            IDataView trainingDataView = mlContext.Data.FilterRowsByColumn(baseTrainingDataView,
+                nameof(AirTravel.AirFare), lowerBound: 30, upperBound: 1400);
+            var cnt2 = trainingDataView.GetColumn<float>(nameof(AirTravel.AirFare)).Count();
 
             // STEP 2: Common data process configuration with pipeline data transformations
-            var dataProcessPipeline = mlContext.Transforms.CopyColumns(outputColumnName: "Label", inputColumnName: nameof(TaxiTrip.FareAmount))
-                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "VendorIdEncoded", inputColumnName: nameof(TaxiTrip.VendorId)))
-                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "RateCodeEncoded", inputColumnName: nameof(TaxiTrip.RateCode)))
-                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "PaymentTypeEncoded",inputColumnName: nameof(TaxiTrip.PaymentType)))
-                            .Append(mlContext.Transforms.NormalizeMeanVariance(outputColumnName: nameof(TaxiTrip.PassengerCount)))
-                            .Append(mlContext.Transforms.NormalizeMeanVariance(outputColumnName: nameof(TaxiTrip.TripTime)))
-                            .Append(mlContext.Transforms.NormalizeMeanVariance(outputColumnName: nameof(TaxiTrip.TripDistance)))
-                            .Append(mlContext.Transforms.Concatenate("Features", "VendorIdEncoded", "RateCodeEncoded", "PaymentTypeEncoded", nameof(TaxiTrip.PassengerCount)
-                            , nameof(TaxiTrip.TripTime), nameof(TaxiTrip.TripDistance)));
+            var dataProcessPipeline = mlContext.Transforms
+                .CopyColumns(outputColumnName: "Label", inputColumnName: nameof(AirTravel.AirFare))
+                // TravelDate
+
+                // DepartmentAirport
+                .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DepartmentAirportEncoded",
+                    inputColumnName: nameof(AirTravel.DepartmentAirport)))
+
+                // DepartmentTime
+
+                // ArrivalAirport
+                .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "ArrivalAirportEncoded",
+                    inputColumnName: nameof(AirTravel.ArrivalAirport)))
+
+                // ArrivalTime
+
+                // Duration
+
+                // Direct
+
+                // Transit
+
+                // Baggage
+
+                // Airline
+                .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "AirlineEncoded",
+                    inputColumnName: nameof(AirTravel.Airline)))
+                .Append(mlContext.Transforms.Concatenate("Features", "DepartmentAirportEncoded",
+                    "ArrivalAirportEncoded", "AirlineEncoded"));
+            // TODO: Fill gaps
 
             // (OPTIONAL) Peek data (such as 5 records) in training DataView after applying the ProcessPipeline's transformations into "Features" 
-            ConsoleHelper.PeekDataViewInConsole(mlContext, trainingDataView, dataProcessPipeline, 5);
-            ConsoleHelper.PeekVectorColumnDataInConsole(mlContext, "Features", trainingDataView, dataProcessPipeline, 5);
-
+            // ConsoleHelper.PeekDataViewInConsole(mlContext, trainingDataView, dataProcessPipeline, 5);
+            // ConsoleHelper.PeekVectorColumnDataInConsole(mlContext, "Features", trainingDataView, dataProcessPipeline,
+            //     5);
+// TODO: Fix the error related to the exception
             // STEP 3: Set the training algorithm, then create and config the modelBuilder - Selected Trainer (SDCA Regression algorithm)                            
             var trainer = mlContext.Regression.Trainers.Sdca(labelColumnName: "Label", featureColumnName: "Features");
             var trainingPipeline = dataProcessPipeline.Append(trainer);
@@ -91,7 +116,8 @@ namespace Regression_TaxiFarePrediction
             Console.WriteLine("===== Evaluating Model's accuracy with Test data =====");
 
             IDataView predictions = trainedModel.Transform(testDataView);
-            var metrics = mlContext.Regression.Evaluate(predictions, labelColumnName: "Label", scoreColumnName: "Score");
+            var metrics =
+                mlContext.Regression.Evaluate(predictions, labelColumnName: "Label", scoreColumnName: "Score");
 
             Common.ConsoleHelper.PrintRegressionMetrics(trainer.ToString(), metrics);
 
@@ -105,40 +131,41 @@ namespace Regression_TaxiFarePrediction
 
         private static void TestSinglePrediction(MLContext mlContext)
         {
-            //Sample: 
-            //vendor_id,rate_code,passenger_count,trip_time_in_secs,trip_distance,payment_type,fare_amount
-            //VTS,1,1,1140,3.75,CRD,15.5
-
-            var taxiTripSample = new TaxiTrip()
+            // Test: 18/12/2019,ZQN,10:20 AM,WLG,6:10 PM,7h 50m,(1 stop),4h 50m in AKL,,Air New Zealand,422
+            var airTravelSample = new AirTravel
             {
-                VendorId = "VTS",
-                RateCode = "1",
-                PassengerCount = 1,
-                TripTime = 1140,
-                TripDistance = 3.75f,
-                PaymentType = "CRD",
-                FareAmount = 0 // To predict. Actual/Observed = 15.5
+                TravelDate = DateTime.ParseExact("18/12/2019", "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                DepartmentAirport = "ZQN",
+                DepartmentTime = DateTime.ParseExact("10:20 AM", "h:mm tt", CultureInfo.InvariantCulture),
+                ArrivalAirport = "WLG",
+                ArrivalTime = DateTime.ParseExact("6:10 PM", "h:mm tt", CultureInfo.InvariantCulture),
+                Duration = TimeSpan.ParseExact("7h 50m", "h\\h\\ mm\\m", CultureInfo.InvariantCulture),
+                Direct = "(1 stop)",
+                Transit = "4h 50m in AKL",
+                Baggage = "",
+                Airline = "Air New Zealand",
+                AirFare = 422
             };
 
             ///
             ITransformer trainedModel = mlContext.Model.Load(ModelPath, out var modelInputSchema);
 
             // Create prediction engine related to the loaded trained model
-            var predEngine = mlContext.Model.CreatePredictionEngine<TaxiTrip, TaxiTripFarePrediction>(trainedModel);
+            var predEngine = mlContext.Model.CreatePredictionEngine<AirTravel, AirTravelFarePrediction>(trainedModel);
 
             //Score
-            var resultprediction = predEngine.Predict(taxiTripSample);
+            var resultprediction = predEngine.Predict(airTravelSample);
             ///
 
             Console.WriteLine($"**********************************************************************");
-            Console.WriteLine($"Predicted fare: {resultprediction.FareAmount:0.####}, actual fare: 15.5");
+            Console.WriteLine($"Predicted fare: {resultprediction.FareAmount:0.####}, actual fare: 422");
             Console.WriteLine($"**********************************************************************");
         }
 
-        private static void PlotRegressionChart(MLContext mlContext,                                               
-                                                string testDataSetPath,
-                                                int numberOfRecordsToRead,
-                                                string[] args)
+        private static void PlotRegressionChart(MLContext mlContext,
+            string testDataSetPath,
+            int numberOfRecordsToRead,
+            string[] args)
         {
             ITransformer trainedModel;
             using (var stream = new FileStream(ModelPath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -147,7 +174,7 @@ namespace Regression_TaxiFarePrediction
             }
 
             // Create prediction engine related to the loaded trained model
-            var predFunction = mlContext.Model.CreatePredictionEngine<TaxiTrip, TaxiTripFarePrediction>(trainedModel);
+            var predFunction = mlContext.Model.CreatePredictionEngine<AirTravel, AirTravelFarePrediction>(trainedModel);
 
             string chartFileName = "";
             using (var pl = new PLStream())
@@ -156,13 +183,13 @@ namespace Regression_TaxiFarePrediction
                 if (args.Length == 1 && args[0] == "svg")
                 {
                     pl.sdev("svg");
-                    chartFileName = "TaxiRegressionDistribution.svg";
+                    chartFileName = "AirRegressionDistribution.svg";
                     pl.sfnam(chartFileName);
                 }
                 else
                 {
                     pl.sdev("pngcairo");
-                    chartFileName = "TaxiRegressionDistribution.png";
+                    chartFileName = "AirRegressionDistribution.png";
                     pl.sfnam(chartFileName);
                 }
 
@@ -176,14 +203,14 @@ namespace Regression_TaxiFarePrediction
                 const int xMinLimit = 0;
                 const int xMaxLimit = 35; //Rides larger than $35 are not shown in the chart
                 const int yMinLimit = 0;
-                const int yMaxLimit = 35;  //Rides larger than $35 are not shown in the chart
+                const int yMaxLimit = 35; //Rides larger than $35 are not shown in the chart
                 pl.env(xMinLimit, xMaxLimit, yMinLimit, yMaxLimit, AxesScale.Independent, AxisBox.BoxTicksLabelsAxes);
 
                 // Set scaling for mail title text 125% size of default
                 pl.schr(0, 1.25);
 
                 // The main title
-                pl.lab("Measured", "Predicted", "Distribution of Taxi Fare Prediction");
+                pl.lab("Measured", "Predicted", "Distribution of Air Travel Fare Prediction");
 
                 // plot using different colors
                 // see http://plplot.sourceforge.net/examples.php?demo=02 for palette indices
@@ -193,7 +220,7 @@ namespace Regression_TaxiFarePrediction
                 var testData = new TaxiTripCsvReader().GetDataFromCsv(testDataSetPath, totalNumber).ToList();
 
                 //This code is the symbol to paint
-                char code = (char)9;
+                char code = (char) 9;
 
                 // plot using other color
                 //pl.col0(9); //Light Green
@@ -213,7 +240,7 @@ namespace Regression_TaxiFarePrediction
                     //Make Prediction
                     var FarePrediction = predFunction.Predict(testData[i]);
 
-                    x[0] = testData[i].FareAmount;
+                    x[0] = testData[i].AirFare;
                     y[0] = FarePrediction.FareAmount;
 
                     //Paint a dot
@@ -232,7 +259,7 @@ namespace Regression_TaxiFarePrediction
 
                     Console.WriteLine($"-------------------------------------------------");
                     Console.WriteLine($"Predicted : {FarePrediction.FareAmount}");
-                    Console.WriteLine($"Actual:    {testData[i].FareAmount}");
+                    Console.WriteLine($"Actual:    {testData[i].AirFare}");
                     Console.WriteLine($"-------------------------------------------------");
                 }
 
@@ -275,7 +302,6 @@ namespace Regression_TaxiFarePrediction
                 // output version of PLplot
                 pl.gver(out var verText);
                 Console.WriteLine("PLplot version " + verText);
-
             } // the pl object is disposed here
 
             // Open Chart File In Microsoft Photos App (Or default app, like browser for .svg)
@@ -303,26 +329,29 @@ namespace Regression_TaxiFarePrediction
 
     public class TaxiTripCsvReader
     {
-        public IEnumerable<TaxiTrip> GetDataFromCsv(string dataLocation, int numMaxRecords)
+        public IEnumerable<AirTravel> GetDataFromCsv(string dataLocation, int numMaxRecords)
         {
-            IEnumerable<TaxiTrip> records =
+            IEnumerable<AirTravel> records =
                 File.ReadAllLines(dataLocation)
-                .Skip(1)
-                .Select(x => x.Split(','))
-                .Select(x => new TaxiTrip()
-                {
-                    VendorId = x[0],
-                    RateCode = x[1],
-                    PassengerCount = float.Parse(x[2], CultureInfo.InvariantCulture),
-                    TripTime = float.Parse(x[3], CultureInfo.InvariantCulture),
-                    TripDistance = float.Parse(x[4], CultureInfo.InvariantCulture),
-                    PaymentType = x[5],
-                    FareAmount = float.Parse(x[6], CultureInfo.InvariantCulture)
-                })
-                .Take<TaxiTrip>(numMaxRecords);
+                    .Skip(1)
+                    .Select(x => x.Split(','))
+                    .Select(x => new AirTravel
+                    {
+                        TravelDate = DateTime.ParseExact(x[0], "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                        DepartmentAirport = x[1],
+                        DepartmentTime = DateTime.ParseExact(x[2], "h:mm tt", CultureInfo.InvariantCulture),
+                        ArrivalAirport = x[3],
+                        ArrivalTime = DateTime.ParseExact(x[4], "h:mm tt", CultureInfo.InvariantCulture),
+                        Duration = TimeSpan.ParseExact(x[5], "h\\h\\ mm\\m", CultureInfo.InvariantCulture),
+                        Direct = x[6],
+                        Transit = x[7],
+                        Baggage = x[8],
+                        Airline = x[9],
+                        AirFare = float.Parse(x[10])
+                    })
+                    .Take<AirTravel>(numMaxRecords);
 
             return records;
         }
     }
-
 }

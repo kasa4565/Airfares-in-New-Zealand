@@ -1,3 +1,4 @@
+using System;
 using Microsoft.ML.Data;
 
 namespace Regression_TaxiFarePrediction.DataStructures
@@ -5,7 +6,7 @@ namespace Regression_TaxiFarePrediction.DataStructures
     public class AirTravel
     {
         [LoadColumn(0)]
-        public string TravelDate;
+        public DateTime TravelDate;
         
         
         [LoadColumn(1)]
@@ -13,7 +14,7 @@ namespace Regression_TaxiFarePrediction.DataStructures
         
         
         [LoadColumn(2)]
-        public string DepartmentTime;
+        public DateTime DepartmentTime;
         
         
         [LoadColumn(3)]
@@ -21,11 +22,11 @@ namespace Regression_TaxiFarePrediction.DataStructures
         
         
         [LoadColumn(4)]
-        public string ArrivalTime;
+        public DateTime ArrivalTime;
         
         
         [LoadColumn(5)]
-        public string Duration;
+        public TimeSpan Duration;
         
         
         [LoadColumn(6)]

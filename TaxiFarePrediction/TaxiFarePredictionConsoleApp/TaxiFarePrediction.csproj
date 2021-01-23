@@ -26,8 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\Data\taxi-fare-test.csv" Link="Data\taxi-fare-test.csv" />
-    <None Include="..\Data\taxi-fare-train.csv" Link="Data\taxi-fare-train.csv" />
+    <None Include="..\Data\nz-airfares-test.csv" Link="Data\nz-airfares-test.csv" />
+    <None Include="..\Data\nz-airfares-train.csv" Link="Data\nz-airfares-train.csv" />
   </ItemGroup>
 
 </Project>
