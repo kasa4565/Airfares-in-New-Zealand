@@ -9,7 +9,7 @@ Sebastian Bobrowski (s17603@pjwstk.edu.pl), Katarzyna Czerwińska (s17098@pjwstk
 #### Runtime
 .NET Runtime 5.0.0
 ### .NET CLI
-Execute the "dotnet run --project dotnet run --project NzAirFarePrediction/NzAirFarePredictionConsoleApp/NzAirFarePrediction.csproj" command in the solution directory.
+Execute the "dotnet run --project NzAirFarePrediction/NzAirFarePredictionConsoleApp/NzAirFarePrediction.csproj" command in the solution directory.
 ### Rider / Visual Studio
 Click the Run button
 
