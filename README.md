@@ -1,4 +1,4 @@
-# New Zealand Fare Prediction
+# New Zealand Air Fare Prediction
 
 ## Problem
 Predict the domestic airfares of New Zealand’s airlines.
