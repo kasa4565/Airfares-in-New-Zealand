@@ -10,6 +10,7 @@ using Microsoft.ML.Data;
 using PLplot;
 using NzAirFarePrediction.DataStructures;
 using static Microsoft.ML.Transforms.NormalizingEstimator;
+using Microsoft.ML.Trainers;
 
 namespace NzAirFarePrediction
 {
@@ -33,98 +34,163 @@ namespace NzAirFarePrediction
 
         #endregion
 
-        static void Main(string[] args) //If args[0] == "svg" a vector-based chart will be created instead a .png chart
+        /// <summary>
+        /// Start the program.
+        /// Create ML Context with seed for repeatable/deterministic results.
+        /// Create, Train, Evaluate and Save a model.
+        /// Make a single test prediction loding the model from .ZIP file.
+        /// </summary>
+        /// <param name="args"></param>
+        static void Main(string[] args)
         {
-            //Create ML Context with seed for repeatable/deterministic results
             MLContext mlContext = new MLContext(seed: 0);
-
-            // Create, Train, Evaluate and Save a model
             BuildTrainEvaluateAndSaveModel(mlContext);
-
-            // Make a single test prediction loding the model from .ZIP file
             TestSinglePrediction(mlContext);
 
             Console.WriteLine("Press any key to exit..");
             Console.ReadLine();
         }
 
+        /// <summary>
+        /// Create, Train, Evaluate and Save a model.
+        /// Common data loading configuration.
+        /// </summary>
+        /// <param name="mlContext"></param>
+        /// <returns></returns>
         private static ITransformer BuildTrainEvaluateAndSaveModel(MLContext mlContext)
         {
-            // STEP 1: Common data loading configuration
+            SdcaRegressionTrainer trainer;
+            EstimatorChain<RegressionPredictionTransformer<LinearRegressionModelParameters>> trainingPipeline;
+
             IDataView baseTrainingDataView =
                 mlContext.Data.LoadFromTextFile<AirTravel>(TrainDataPath, hasHeader: true, separatorChar: ',');
             IDataView testDataView =
                 mlContext.Data.LoadFromTextFile<AirTravel>(TestDataPath, hasHeader: true, separatorChar: ',');
+            IDataView trainingDataView = GetTrainingDataView(mlContext, baseTrainingDataView);
 
-            //Sample code of removing extreme data like "outliers" for FareAmounts higher than $150 and lower than $1 which can be error-data 
-            var cnt = baseTrainingDataView.GetColumn<float>(nameof(AirTravel.AirFare)).Count();
-            IDataView trainingDataView = mlContext.Data.FilterRowsByColumn(baseTrainingDataView,
-                nameof(AirTravel.AirFare), lowerBound: 30, upperBound: 1400);
-            var cnt2 = trainingDataView.GetColumn<float>(nameof(AirTravel.AirFare)).Count();
-
-            // STEP 2: Common data process configuration with pipeline data transformations
-            var dataProcessPipeline = mlContext.Transforms
-                .CopyColumns(outputColumnName: "Label", inputColumnName: nameof(AirTravel.AirFare))
-                // TravelDate
-
-                // DepartmentAirport
-                .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DepartmentAirportEncoded",
-                    inputColumnName: nameof(AirTravel.DepartmentAirport)))
-
-                // DepartmentTime
-
-                // ArrivalAirport
-                .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "ArrivalAirportEncoded",
-                    inputColumnName: nameof(AirTravel.ArrivalAirport)))
-
-                // ArrivalTime
-
-                // Duration
-
-                // Direct
-
-                // Transit
-
-                // Baggage
-
-                // Airline
-                .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "AirlineEncoded",
-                    inputColumnName: nameof(AirTravel.Airline)))
-                .Append(mlContext.Transforms.Concatenate("Features", "DepartmentAirportEncoded",
-                    "ArrivalAirportEncoded", "AirlineEncoded"));
-            // TODO: Fill gaps
-
-            // (OPTIONAL) Peek data (such as 5 records) in training DataView after applying the ProcessPipeline's transformations into "Features" 
-            // ConsoleHelper.PeekDataViewInConsole(mlContext, trainingDataView, dataProcessPipeline, 5);
-            // ConsoleHelper.PeekVectorColumnDataInConsole(mlContext, "Features", trainingDataView, dataProcessPipeline,
-            //     5);
-// TODO: Fix the error related to the exception
-            // STEP 3: Set the training algorithm, then create and config the modelBuilder - Selected Trainer (SDCA Regression algorithm)                            
-            var trainer = mlContext.Regression.Trainers.Sdca(labelColumnName: "Label", featureColumnName: "Features");
-            var trainingPipeline = dataProcessPipeline.Append(trainer);
-
-            // STEP 4: Train the model fitting to the DataSet
-            //The pipeline is trained on the dataset that has been loaded and transformed.
-            Console.WriteLine("=============== Training the model ===============");
-            var trainedModel = trainingPipeline.Fit(trainingDataView);
-
-            // STEP 5: Evaluate the model and show accuracy stats
-            Console.WriteLine("===== Evaluating Model's accuracy with Test data =====");
-
-            IDataView predictions = trainedModel.Transform(testDataView);
-            var metrics =
-                mlContext.Regression.Evaluate(predictions, labelColumnName: "Label", scoreColumnName: "Score");
-
+            var dataProcessPipeline = GetDataProcessPipeline(mlContext);
+            SetTrainingAlgorithm(mlContext, dataProcessPipeline, out trainer, out trainingPipeline);
+            var trainedModel = GetTrainedModel(trainingPipeline, trainingDataView);
+            RegressionMetrics metrics = Evaluate(mlContext, testDataView, trainedModel);
             Common.ConsoleHelper.PrintRegressionMetrics(trainer.ToString(), metrics);
-
-            // STEP 6: Save/persist the trained model to a .ZIP file
-            mlContext.Model.Save(trainedModel, trainingDataView.Schema, ModelPath);
-
-            Console.WriteLine("The model is saved to {0}", ModelPath);
+            SaveModel(mlContext, trainingDataView, trainedModel);
 
             return trainedModel;
         }
 
+        /// <summary>
+        /// Save/persist the trained model to a .ZIP file.
+        /// </summary>
+        /// <param name="mlContext"></param>
+        /// <param name="trainingDataView"></param>
+        /// <param name="trainedModel"></param>
+        private static void SaveModel(MLContext mlContext, IDataView trainingDataView, TransformerChain<RegressionPredictionTransformer<LinearRegressionModelParameters>> trainedModel)
+        {
+            mlContext.Model.Save(trainedModel, trainingDataView.Schema, ModelPath);
+            Console.WriteLine("The model is saved to {0}", ModelPath);
+        }
+
+        /// <summary>
+        /// Evaluate the model.
+        /// </summary>
+        /// <param name="mlContext"></param>
+        /// <param name="testDataView"></param>
+        /// <param name="trainedModel"></param>
+        /// <returns>Accuracy stats</returns>
+        private static RegressionMetrics Evaluate(MLContext mlContext, IDataView testDataView, TransformerChain<RegressionPredictionTransformer<LinearRegressionModelParameters>> trainedModel)
+        {
+            Console.WriteLine("===== Evaluating Model's accuracy with Test data =====");
+            IDataView predictions = trainedModel.Transform(testDataView);
+            var metrics = mlContext.Regression.Evaluate(predictions, labelColumnName: "Label", scoreColumnName: "Score");
+            return metrics;
+        }
+
+        /// <summary>
+        /// Train the model fitting to the DataSet.
+        /// The pipeline is trained on the dataset that has been loaded and transformed.
+        /// </summary>
+        /// <param name="trainingPipeline"></param>
+        /// <param name="trainingDataView"></param>
+        /// <returns></returns>
+        private static TransformerChain<RegressionPredictionTransformer<LinearRegressionModelParameters>> GetTrainedModel(EstimatorChain<RegressionPredictionTransformer<LinearRegressionModelParameters>> trainingPipeline, IDataView trainingDataView)
+        {
+            Console.WriteLine("=============== Training the model ===============");
+            var trainedModel = trainingPipeline.Fit(trainingDataView);
+            return trainedModel;
+        }
+
+        /// <summary>
+        /// Set the training algorithm, then create and config the modelBuilder - Selected Trainer (SDCA Regression algorithm).
+        /// </summary>
+        /// <param name="mlContext"></param>
+        /// <param name="dataProcessPipeline"></param>
+        /// <param name="trainer"></param>
+        /// <param name="trainingPipeline"></param>
+        private static void SetTrainingAlgorithm(MLContext mlContext, EstimatorChain<ColumnConcatenatingTransformer> dataProcessPipeline, out SdcaRegressionTrainer trainer, out EstimatorChain<RegressionPredictionTransformer<LinearRegressionModelParameters>> trainingPipeline)
+        {
+            trainer = mlContext.Regression.Trainers.Sdca(labelColumnName: "Label", featureColumnName: "Features");
+            trainingPipeline = dataProcessPipeline.Append(trainer);
+        }
+
+        /// <summary>
+        /// Common data process configuration with pipeline data transformations.
+        /// </summary>
+        /// <param name="mlContext"></param>
+        /// <returns></returns>
+        private static EstimatorChain<ColumnConcatenatingTransformer> GetDataProcessPipeline(MLContext mlContext)
+        {
+            var dataProcessPipeline = mlContext.Transforms
+                            .CopyColumns(outputColumnName: "Label", inputColumnName: nameof(AirTravel.AirFare))
+                            // TravelDate
+
+                            // DepartmentAirport
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DepartmentAirportEncoded",
+                                inputColumnName: nameof(AirTravel.DepartmentAirport)))
+
+                            // DepartmentTime
+
+                            // ArrivalAirport
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "ArrivalAirportEncoded",
+                                inputColumnName: nameof(AirTravel.ArrivalAirport)))
+
+                            // ArrivalTime
+
+                            // Duration
+
+                            // Direct
+
+                            // Transit
+
+                            // Baggage
+
+                            // Airline
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "AirlineEncoded",
+                                inputColumnName: nameof(AirTravel.Airline)))
+                            .Append(mlContext.Transforms.Concatenate("Features", "DepartmentAirportEncoded",
+                                "ArrivalAirportEncoded", "AirlineEncoded"));
+            // TODO: Fill gaps
+            return dataProcessPipeline;
+        }
+
+        /// <summary>
+        /// Sample code of removing extreme data like "outliers" for FareAmounts higher than $150 and lower than $1 which can be error-data.
+        /// </summary>
+        /// <param name="mlContext"></param>
+        /// <param name="baseTrainingDataView"></param>
+        /// <returns></returns>
+        private static IDataView GetTrainingDataView(MLContext mlContext, IDataView baseTrainingDataView)
+        {
+            var cnt = baseTrainingDataView.GetColumn<float>(nameof(AirTravel.AirFare)).Count();
+            IDataView trainingDataView = mlContext.Data.FilterRowsByColumn(baseTrainingDataView,
+                nameof(AirTravel.AirFare), lowerBound: 30, upperBound: 1400);
+            var cnt2 = trainingDataView.GetColumn<float>(nameof(AirTravel.AirFare)).Count();
+            return trainingDataView;
+        }
+
+        /// <summary>
+        /// Make a single test prediction loding the model from .ZIP file.
+        /// </summary>
+        /// <param name="mlContext"></param>
         private static void TestSinglePrediction(MLContext mlContext)
         {
             // Test: 18/12/2019,ZQN,10:20 AM,WLG,6:10 PM,7h 50m,(1 stop),4h 50m in AKL,,Air New Zealand,422
