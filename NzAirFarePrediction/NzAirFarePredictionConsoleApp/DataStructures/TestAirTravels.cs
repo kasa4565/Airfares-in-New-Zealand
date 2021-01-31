@@ -10,12 +10,12 @@ namespace NzAirFarePrediction.DataStructures
         /// </summary>
         internal static readonly AirTravel Travel1 = new AirTravel
         {
-            TravelDate = DateTime.ParseExact("18/12/2019", "dd/MM/yyyy", CultureInfo.InvariantCulture),
+            TravelDate = "18/12/2019",
             DepartmentAirport = "ZQN",
-            DepartmentTime = DateTime.ParseExact("9:35 AM", "h:mm tt", CultureInfo.InvariantCulture),
+            DepartmentTime = "9:35 AM",
             ArrivalAirport = "WLG",
-            ArrivalTime = DateTime.ParseExact("6:10 PM", "h:mm tt", CultureInfo.InvariantCulture),
-            Duration = TimeSpan.ParseExact("8h 35m", "h\\h\\ mm\\m", CultureInfo.InvariantCulture),
+            ArrivalTime = "6:10 PM",
+            Duration = "8h 35m",
             Direct = "(1 stop)",
             Transit = "5h 35m in AKL",
             Baggage = "",
@@ -28,12 +28,12 @@ namespace NzAirFarePrediction.DataStructures
         /// </summary>
         internal static readonly AirTravel Travel2 = new AirTravel
         {
-            TravelDate = DateTime.ParseExact("18/12/2019", "dd/MM/yyyy", CultureInfo.InvariantCulture),
+            TravelDate = "18/12/2019",
             DepartmentAirport = "ZQN",
-            DepartmentTime = DateTime.ParseExact("10:20 AM", "h:mm tt", CultureInfo.InvariantCulture),
+            DepartmentTime = "10:20 AM",
             ArrivalAirport = "WLG",
-            ArrivalTime = DateTime.ParseExact("6:40 PM", "h:mm tt", CultureInfo.InvariantCulture),
-            Duration = TimeSpan.ParseExact("8h 20m", "h\\h\\ mm\\m", CultureInfo.InvariantCulture),
+            ArrivalTime = "6:40 PM",
+            Duration = "8h 20m",
             Direct = "(1 stop)",
             Transit = "5h 20m in AKL",
             Baggage = "",

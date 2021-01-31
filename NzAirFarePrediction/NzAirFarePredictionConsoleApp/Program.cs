@@ -141,33 +141,48 @@ namespace NzAirFarePrediction
         {
             var dataProcessPipeline = mlContext.Transforms
                             .CopyColumns(outputColumnName: "Label", inputColumnName: nameof(AirTravel.AirFare))
+
                             // TravelDate
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "TravelDateEncoded",
+                                inputColumnName: nameof(AirTravel.TravelDate)))
 
                             // DepartmentAirport
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DepartmentAirportEncoded",
                                 inputColumnName: nameof(AirTravel.DepartmentAirport)))
 
                             // DepartmentTime
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DepartmentTimeEncoded",
+                                inputColumnName: nameof(AirTravel.DepartmentTime)))
 
                             // ArrivalAirport
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "ArrivalAirportEncoded",
                                 inputColumnName: nameof(AirTravel.ArrivalAirport)))
 
                             // ArrivalTime
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "ArrivalTimeEncoded",
+                                inputColumnName: nameof(AirTravel.ArrivalTime)))
 
                             // Duration
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DurationEncoded",
+                                inputColumnName: nameof(AirTravel.Duration)))
 
                             // Direct
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DirectEncoded",
+                                inputColumnName: nameof(AirTravel.Direct)))
 
                             // Transit
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "TransitEncoded",
+                                inputColumnName: nameof(AirTravel.Transit)))
 
                             // Baggage
+                            .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "BaggageEncoded",
+                                inputColumnName: nameof(AirTravel.Baggage)))
 
                             // Airline
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "AirlineEncoded",
                                 inputColumnName: nameof(AirTravel.Airline)))
-                            .Append(mlContext.Transforms.Concatenate("Features", "DepartmentAirportEncoded",
-                                "ArrivalAirportEncoded", "AirlineEncoded"));
+                            .Append(mlContext.Transforms.Concatenate("Features", "TravelDateEncoded", "DepartmentAirportEncoded", "DepartmentTimeEncoded",
+                                "ArrivalAirportEncoded", "ArrivalTimeEncoded", "DurationEncoded", "DirectEncoded", "TransitEncoded", "BaggageEncoded", "AirlineEncoded"));
             // TODO: Fill gaps
             return dataProcessPipeline;
         }
@@ -196,12 +211,12 @@ namespace NzAirFarePrediction
             // Test: 18/12/2019,ZQN,10:20 AM,WLG,6:10 PM,7h 50m,(1 stop),4h 50m in AKL,,Air New Zealand,422
             var airTravelSample = new AirTravel
             {
-                TravelDate = DateTime.ParseExact("18/12/2019", "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                TravelDate = "18/12/2019",
                 DepartmentAirport = "ZQN",
-                DepartmentTime = DateTime.ParseExact("10:20 AM", "h:mm tt", CultureInfo.InvariantCulture),
+                DepartmentTime = "10:20 AM",
                 ArrivalAirport = "WLG",
-                ArrivalTime = DateTime.ParseExact("6:10 PM", "h:mm tt", CultureInfo.InvariantCulture),
-                Duration = TimeSpan.ParseExact("7h 50m", "h\\h\\ mm\\m", CultureInfo.InvariantCulture),
+                ArrivalTime = "6:10 PM",
+                Duration = "7h 50m",
                 Direct = "(1 stop)",
                 Transit = "4h 50m in AKL",
                 Baggage = "",
