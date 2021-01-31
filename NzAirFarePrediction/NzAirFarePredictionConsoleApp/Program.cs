@@ -5,6 +5,7 @@ using Microsoft.ML;
 using Microsoft.ML.Data;
 using NzAirFarePrediction.DataStructures;
 using Microsoft.ML.Trainers;
+using System.Collections.Generic;
 
 namespace NzAirFarePrediction
 {
@@ -38,10 +39,31 @@ namespace NzAirFarePrediction
         {
             MLContext mlContext = new MLContext(seed: 0);
             BuildTrainEvaluateAndSaveModel(mlContext);
-            TestSinglePrediction(mlContext);
+            DoSamplePredictions(mlContext);
 
             Console.WriteLine("Press any key to exit..");
             Console.ReadLine();
+        }
+
+        private static void DoSamplePredictions(MLContext mlContext)
+        {
+            var samples = GetSamples();
+
+            foreach (var sample in samples)
+            {
+                TestSinglePrediction(mlContext, sample);
+            }
+        }
+
+        private static IEnumerable<AirTravel> GetSamples()
+        {
+            var samples = new List<AirTravel>();
+
+            samples.Add(TestAirTravels.Travel1);
+            samples.Add(TestAirTravels.Travel2);
+            samples.Add(TestAirTravels.Travel3);
+
+            return samples;
         }
 
         /// <summary>
@@ -172,40 +194,20 @@ namespace NzAirFarePrediction
             IDataView trainingDataView = mlContext.Data.FilterRowsByColumn(baseTrainingDataView,
                 nameof(AirTravel.AirFare), lowerBound: 30, upperBound: 1400);
             var cnt2 = trainingDataView.GetColumn<float>(nameof(AirTravel.AirFare)).Count();
+
             return trainingDataView;
         }
 
         /// <summary>
         /// Make a single test prediction loding the model from .ZIP file.
+        /// Create prediction engine related to the loaded trained model.
         /// </summary>
         /// <param name="mlContext"></param>
-        private static void TestSinglePrediction(MLContext mlContext)
+        private static void TestSinglePrediction(MLContext mlContext, AirTravel sample)
         {
-            // Test: 18/12/2019,ZQN,10:20 AM,WLG,6:10 PM,7h 50m,(1 stop),4h 50m in AKL,,Air New Zealand,422
-            var airTravelSample = new AirTravel
-            {
-                TravelDate = "18/12/2019",
-                DepartmentAirport = "ZQN",
-                DepartmentTime = "10:20 AM",
-                ArrivalAirport = "WLG",
-                ArrivalTime = "6:10 PM",
-                Duration = "7h 50m",
-                Direct = "(1 stop)",
-                Transit = "4h 50m in AKL",
-                Baggage = "",
-                Airline = "Air New Zealand",
-                AirFare = 422
-            };
-
-            ///
             ITransformer trainedModel = mlContext.Model.Load(ModelPath, out var modelInputSchema);
-
-            // Create prediction engine related to the loaded trained model
             var predEngine = mlContext.Model.CreatePredictionEngine<AirTravel, AirTravelFarePrediction>(trainedModel);
-
-            //Score
-            var resultprediction = predEngine.Predict(airTravelSample);
-            ///
+            var resultprediction = predEngine.Predict(sample);
 
             Console.WriteLine($"**********************************************************************");
             Console.WriteLine($"Predicted fare: {resultprediction.FareAmount:0.####}, actual fare: 422");
@@ -216,7 +218,6 @@ namespace NzAirFarePrediction
         {
             FileInfo _dataRoot = new FileInfo(typeof(Program).Assembly.Location);
             string assemblyFolderPath = _dataRoot.Directory.FullName;
-
             string fullPath = Path.Combine(assemblyFolderPath, relativePath);
 
             return fullPath;

@@ -37,5 +37,23 @@ namespace NzAirFarePrediction.DataStructures
             Airline = "Air New Zealand",
             AirFare = 422
         };
+
+        /// <summary>
+        /// Test: 18/12/2019,ZQN,10:20 AM,WLG,6:10 PM,7h 50m,(1 stop),4h 50m in AKL,,Air New Zealand,422
+        /// </summary>
+        internal static readonly AirTravel Travel3 = new AirTravel
+        {
+            TravelDate = "18/12/2019",
+            DepartmentAirport = "ZQN",
+            DepartmentTime = "10:20 AM",
+            ArrivalAirport = "WLG",
+            ArrivalTime = "6:10 PM",
+            Duration = "7h 50m",
+            Direct = "(1 stop)",
+            Transit = "4h 50m in AKL",
+            Baggage = "",
+            Airline = "Air New Zealand",
+            AirFare = 422
+        };
     }
 }

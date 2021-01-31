@@ -1,4 +1,3 @@
-using System;
 using Microsoft.ML.Data;
 
 namespace NzAirFarePrediction.DataStructures
