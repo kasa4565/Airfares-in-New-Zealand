@@ -1,36 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using Common;
 using Microsoft.ML;
 using Microsoft.ML.Data;
-using PLplot;
 using NzAirFarePrediction.DataStructures;
-using static Microsoft.ML.Transforms.NormalizingEstimator;
 using Microsoft.ML.Trainers;
 
 namespace NzAirFarePrediction
 {
     internal static class Program
     {
+
         #region paths
 
-        private static string AppPath => Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
+        private static readonly string BaseDatasetsRelativePath = @"../../../../Data";
+        private static readonly string TrainDataRelativePath = $"{BaseDatasetsRelativePath}/nz-airfares-train.csv";
+        private static readonly string TestDataRelativePath = $"{BaseDatasetsRelativePath}/nz-airfares-test.csv";
 
-        private static string BaseDatasetsRelativePath = @"../../../../Data";
-        private static string TrainDataRelativePath = $"{BaseDatasetsRelativePath}/nz-airfares-train.csv";
-        private static string TestDataRelativePath = $"{BaseDatasetsRelativePath}/nz-airfares-test.csv";
+        private static readonly string TrainDataPath = GetAbsolutePath(TrainDataRelativePath);
+        private static readonly string TestDataPath = GetAbsolutePath(TestDataRelativePath);
 
-        private static string TrainDataPath = GetAbsolutePath(TrainDataRelativePath);
-        private static string TestDataPath = GetAbsolutePath(TestDataRelativePath);
+        private static readonly string BaseModelsRelativePath = @"../../../../MLModels";
+        private static readonly string ModelRelativePath = $"{BaseModelsRelativePath}/AirTravelFareModel.zip";
 
-        private static string BaseModelsRelativePath = @"../../../../MLModels";
-        private static string ModelRelativePath = $"{BaseModelsRelativePath}/AirTravelFareModel.zip";
-
-        private static string ModelPath = GetAbsolutePath(ModelRelativePath);
+        private static readonly string ModelPath = GetAbsolutePath(ModelRelativePath);
 
         #endregion
 
@@ -141,49 +134,29 @@ namespace NzAirFarePrediction
         {
             var dataProcessPipeline = mlContext.Transforms
                             .CopyColumns(outputColumnName: "Label", inputColumnName: nameof(AirTravel.AirFare))
-
-                            // TravelDate
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "TravelDateEncoded",
                                 inputColumnName: nameof(AirTravel.TravelDate)))
-
-                            // DepartmentAirport
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DepartmentAirportEncoded",
                                 inputColumnName: nameof(AirTravel.DepartmentAirport)))
-
-                            // DepartmentTime
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DepartmentTimeEncoded",
                                 inputColumnName: nameof(AirTravel.DepartmentTime)))
-
-                            // ArrivalAirport
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "ArrivalAirportEncoded",
                                 inputColumnName: nameof(AirTravel.ArrivalAirport)))
-
-                            // ArrivalTime
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "ArrivalTimeEncoded",
                                 inputColumnName: nameof(AirTravel.ArrivalTime)))
-
-                            // Duration
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DurationEncoded",
                                 inputColumnName: nameof(AirTravel.Duration)))
-
-                            // Direct
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "DirectEncoded",
                                 inputColumnName: nameof(AirTravel.Direct)))
-
-                            // Transit
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "TransitEncoded",
                                 inputColumnName: nameof(AirTravel.Transit)))
-
-                            // Baggage
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "BaggageEncoded",
                                 inputColumnName: nameof(AirTravel.Baggage)))
-
-                            // Airline
                             .Append(mlContext.Transforms.Categorical.OneHotEncoding(outputColumnName: "AirlineEncoded",
                                 inputColumnName: nameof(AirTravel.Airline)))
                             .Append(mlContext.Transforms.Concatenate("Features", "TravelDateEncoded", "DepartmentAirportEncoded", "DepartmentTimeEncoded",
                                 "ArrivalAirportEncoded", "ArrivalTimeEncoded", "DurationEncoded", "DirectEncoded", "TransitEncoded", "BaggageEncoded", "AirlineEncoded"));
-            // TODO: Fill gaps
+
             return dataProcessPipeline;
         }
 
