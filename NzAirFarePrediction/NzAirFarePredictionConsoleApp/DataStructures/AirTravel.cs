@@ -1,4 +1,3 @@
-using System;
 using Microsoft.ML.Data;
 
 namespace NzAirFarePrediction.DataStructures
@@ -6,7 +5,7 @@ namespace NzAirFarePrediction.DataStructures
     public class AirTravel
     {
         [LoadColumn(0)]
-        public DateTime TravelDate;
+        public string TravelDate;
         
         
         [LoadColumn(1)]
@@ -14,7 +13,7 @@ namespace NzAirFarePrediction.DataStructures
         
         
         [LoadColumn(2)]
-        public DateTime DepartmentTime;
+        public string DepartmentTime;
         
         
         [LoadColumn(3)]
@@ -22,11 +21,11 @@ namespace NzAirFarePrediction.DataStructures
         
         
         [LoadColumn(4)]
-        public DateTime ArrivalTime;
+        public string ArrivalTime;
         
         
         [LoadColumn(5)]
-        public TimeSpan Duration;
+        public string Duration;
         
         
         [LoadColumn(6)]
